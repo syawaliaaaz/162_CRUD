@@ -6,7 +6,6 @@ const port = 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 🔧 Ganti Pool → Connection
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -15,13 +14,12 @@ const db = mysql.createConnection({
     port: 3309,
 });
 
-// 🔗 Cek koneksi ke database
 db.connect((err) => {
     if (err) {
         console.error('Database connection failed:', err.stack);
         return;
     }
-    console.log('Connected to MySQL as ID', db.threadId);
+    console.log('Koneksi Berhasil!');
 });
 
 app.get("/", (req, res) => {
