@@ -6,7 +6,8 @@ const port = 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const db = mysql.createPool({
+// 🔧 Ganti Pool → Connection
+const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: 'Kudangamuk',
@@ -14,8 +15,13 @@ const db = mysql.createPool({
     port: 3309,
 });
 
-db.on('error', (err) => {
-    console.error('MySQL Pool Error:', err);
+// 🔗 Cek koneksi ke database
+db.connect((err) => {
+    if (err) {
+        console.error('Database connection failed:', err.stack);
+        return;
+    }
+    console.log('Connected to MySQL as ID', db.threadId);
 });
 
 app.get("/", (req, res) => {
@@ -25,10 +31,8 @@ app.get("/", (req, res) => {
 app.get('/api/mahasiswa', (req, res) => {
     db.query('SELECT * FROM biodata', (err, results) => {
         if (err) {
-            // Perbaikan: Hapus operator '+' yang tidak diperlukan
-            console.error('Error executing query:', err.stack); 
-            res.status(500).send('Error fetching users');
-            return;
+            console.error('Error executing query:', err.stack);
+            return res.status(500).send('Error fetching users');
         }
         res.json(results);
     });
@@ -38,8 +42,7 @@ app.post('/api/mahasiswa', (req, res) => {
     const { nama, alamat, agama } = req.body;
 
     if (!nama || !alamat || !agama) {
-        // Perbaikan: Tutup objek JSON dengan benar
-        return res.status(400).json({ message : 'nama, alamat, agama harus diisi' });
+        return res.status(400).json({ message: 'nama, alamat, agama harus diisi' });
     }
 
     db.query(
@@ -47,12 +50,12 @@ app.post('/api/mahasiswa', (req, res) => {
         [nama, alamat, agama],
         (err, results) => {
             if (err) {
-                console.error(err);
+                console.error('Database error:', err);
                 return res.status(500).send('Database error');
             }
-            res.status(201).json({ 
+            res.status(201).json({
                 message: 'User created successfully',
-                id: results.insertId 
+                id: results.insertId
             });
         }
     );
@@ -61,9 +64,9 @@ app.post('/api/mahasiswa', (req, res) => {
 app.put('/api/mahasiswa/:id', (req, res) => {
     const userId = req.params.id;
     const { nama, alamat, agama } = req.body;
-    
+
     if (!nama || !alamat || !agama) {
-         return res.status(400).json({ message : 'Semua field (nama, alamat, agama) harus diisi untuk update' });
+        return res.status(400).json({ message: 'Semua field (nama, alamat, agama) harus diisi untuk update' });
     }
 
     db.query(
@@ -71,10 +74,10 @@ app.put('/api/mahasiswa/:id', (req, res) => {
         [nama, alamat, agama, userId],
         (err, results) => {
             if (err) {
-                console.error(err);
+                console.error('Database error:', err);
                 return res.status(500).json({ message: 'Database error' });
             }
-            
+
             if (results.affectedRows === 0) {
                 return res.status(404).json({ message: `User dengan ID ${userId} tidak ditemukan` });
             }
@@ -86,16 +89,16 @@ app.put('/api/mahasiswa/:id', (req, res) => {
 
 app.delete('/api/mahasiswa/:id', (req, res) => {
     const userId = req.params.id;
-    db.query( 'DELETE FROM biodata WHERE id = ?', [userId], (err, results) => {
+    db.query('DELETE FROM biodata WHERE id = ?', [userId], (err, results) => {
         if (err) {
-            console.error(err);
+            console.error('Database error:', err);
             return res.status(500).json({ message: 'Database error' });
         }
-        
+
         if (results.affectedRows === 0) {
             return res.status(404).json({ message: `User dengan ID ${userId} tidak ditemukan` });
         }
-        
+
         res.status(200).json({ message: 'User deleted successfully' });
     });
 });
