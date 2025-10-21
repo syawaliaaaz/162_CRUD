@@ -12,7 +12,6 @@ const db = mysql.createPool({
     password: 'Kudangamuk',
     database: 'mahasiswa',
     port: 3309,
-    connectionLimit: 10 
 });
 
 db.on('error', (err) => {
